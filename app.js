@@ -1,4 +1,4 @@
-/* Carol's Work Helper · 单人事务管理器
+/* Carol's work & personal task manager · 单人事务管理器
    数据只保存在当前浏览器，不连接团队数据库。 */
 
 /* ------------------------------ 常量 ------------------------------ */
@@ -42,7 +42,7 @@ const LANG_INDEX = { zh: 0, en: 1, es: 2 };
 
 /* 每条： [简体中文, English, Español] */
 const STR = {
-  'app.title': ["Carol's Work Helper", "Carol's Work Helper", "Carol's Work Helper"],
+  'app.title': ["Carol's work & personal task manager", "Carol's work & personal task manager", "Carol's work & personal task manager"],
   'app.team': ['工作与个人事务管理器', 'Work & personal task manager', 'Gestor de asuntos laborales y personales'],
 
   'login.email': ['邮箱', 'Email', 'Correo electrónico'],
@@ -1373,7 +1373,7 @@ function shell(route, content) {
   return `
   <div class="topbar">
     <div class="topbar-inner">
-      <div class="logo"><div class="brand-mark">C</div><span>Work &amp; personal task manager</span></div>
+      <div class="logo"><div class="brand-mark">C</div><span>Carol's work &amp; personal task manager</span></div>
       <nav class="nav">${navFor(route)}${langSwitcher('in-nav')}</nav>
       <div class="topbar-right">
         <button class="btn btn-sm btn-ghost" type="button" data-action="logout">${esc(t('topbar.signout'))}</button>
