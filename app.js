@@ -1,5 +1,5 @@
 /* Carol's work & personal task manager · 单人事务管理器
-   数据只保存在当前浏览器，不连接团队数据库。 */
+   数据通过个人版专用 Supabase 项目同步，不连接团队数据库。 */
 
 /* ------------------------------ 常量 ------------------------------ */
 
@@ -13,12 +13,11 @@ const KEY = {
   systemEnabled: 'carol_solo_notice_enabled_v1',
 };
 
-/* ------------------------------ 共享数据（Supabase） ------------------------------
-   页面是纯静态的，所以要三个人共用一份数据，必须有个服务器那一侧。
+/* ------------------------------ 多设备同步（个人版专用 Supabase） ------------------------------
    publishable key 设计成可以公开，配合数据库里的权限规则使用。 */
 const SUPABASE = {
-  url: '',
-  key: '',
+  url: 'https://fnkgulfdcljwjkcqibxi.supabase.co',
+  key: 'sb_publishable_q1rkOmyUCFJ0AXRiT38rOg_9M6eMRT_',
 };
 const SOLO_PREFIX = 'solo_';
 const REMOTE_ENABLED = !!(SUPABASE.url && SUPABASE.key) && typeof fetch === 'function';
