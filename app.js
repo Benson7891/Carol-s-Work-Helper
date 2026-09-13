@@ -17,8 +17,8 @@ const KEY = {
    页面是纯静态的，所以要三个人共用一份数据，必须有个服务器那一侧。
    publishable key 设计成可以公开，配合数据库里的权限规则使用。 */
 const SUPABASE = {
-  url: 'https://tvavifjfbdwgkehtbxum.supabase.co',
-  key: 'sb_publishable_xliQlMoVI_RIwz3OUnrJzw_imZivXbE',
+  url: '',
+  key: '',
 };
 const SOLO_PREFIX = 'solo_';
 const REMOTE_ENABLED = !!(SUPABASE.url && SUPABASE.key) && typeof fetch === 'function';
@@ -1752,7 +1752,7 @@ function viewSettings() {
       <div>
         <div class="card card-pad">
           <div class="section-title">${esc(L({zh:'数据保存',en:'Data storage',es:'Almacenamiento de datos'}))}</div>
-          <p>${esc(L({zh:'这是单人版。手机和电脑会通过 Supabase 自动同步，个人事项与团队版数据相互隔离。',en:'This is the single-user edition. Phone and computer sync automatically through Supabase, while personal data stays separate from the team site.',es:'Esta es la edición individual. El móvil y el ordenador se sincronizan mediante Supabase, y los datos personales permanecen separados del sitio del equipo.'}))}</p>
+          <p>${esc(L({zh:'这是单人版。独立云数据库接入前，数据暂时只保存在当前浏览器中，不会继续写入团队数据库。',en:'This is the single-user edition. Until its independent cloud database is connected, data stays in this browser and is not written to the team database.',es:'Esta es la edición individual. Hasta conectar su base de datos independiente, los datos permanecen en este navegador y no se escriben en la base del equipo.'}))}</p>
           <div class="hint">${esc(L({zh:'建议定期使用“导出CSV表格”备份事项。',en:'Use Export CSV regularly to back up your matters.',es:'Usa Exportar CSV periódicamente para respaldar tus asuntos.'}))}</div>
         </div>
       </div>
