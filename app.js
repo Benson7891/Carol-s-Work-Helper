@@ -16,7 +16,11 @@ const KEY = {
 /* ------------------------------ 共享数据（Supabase） ------------------------------
    页面是纯静态的，所以要三个人共用一份数据，必须有个服务器那一侧。
    publishable key 设计成可以公开，配合数据库里的权限规则使用。 */
-const SUPABASE = { url: '', key: '' };
+const SUPABASE = {
+  url: 'https://tvavifjfbdwgkehtbxum.supabase.co',
+  key: 'sb_publishable_xliQlMoVI_RIwz3OUnrJzw_imZivXbE',
+};
+const SOLO_PREFIX = 'solo_';
 const REMOTE_ENABLED = !!(SUPABASE.url && SUPABASE.key) && typeof fetch === 'function';
 const SYNC_EVERY_MS = 15000;
 const sync = {
@@ -76,9 +80,9 @@ const STR = {
   'sync.failedClick': ['未同步，点这里！', 'Not synced — click here!', 'Sin sincronizar: ¡haz clic aquí!'],
   'sync.offline': ['离线：改动只留在这台设备', 'Offline: changes stay on this device', 'Sin conexión: los cambios quedan aquí'],
   'sync.tablesMissing': ['数据表还没建好，请在 Supabase 里执行建表脚本', 'The tables are missing — run the setup SQL in Supabase', 'Faltan las tablas: ejecuta el SQL de configuración en Supabase'],
-  'sync.tipOk': ['三台设备共用同一份数据 · 最近同步 {time} · 点一下立刻刷新',
-    'All devices share one dataset · last synced {time} · click to refresh now',
-    'Todos los dispositivos comparten los datos · última sincronización {time} · haz clic para refrescar'],
+  'sync.tipOk': ['手机和电脑共用同一份个人数据 · 最近同步 {time} · 点一下立刻刷新',
+    'Your phone and computer share the same personal data · last synced {time} · click to refresh',
+    'El móvil y el ordenador comparten los mismos datos personales · última sincronización {time} · haz clic para actualizar'],
   'sync.tipError': ['同步失败：{msg}。改动已存在本机，稍后会自动重试。',
     'Sync failed: {msg}. Your changes are saved locally and will retry.',
     'Error de sincronización: {msg}. Los cambios están guardados aquí y se reintentará.'],
@@ -869,6 +873,8 @@ function sbFetch(path, opts) {
   return fetch(SUPABASE.url + '/rest/v1' + path, Object.assign({}, opts || {}, { headers }));
 }
 
+function soloRemoteId(id) { return SOLO_PREFIX + String(id); }
+
 const UPSERT = { Prefer: 'resolution=merge-duplicates,return=minimal' };
 const SYNC_RETRY_LIMIT = 3;
 const SYNC_RETRY_DELAY_MS = 800;
@@ -909,15 +915,16 @@ function userIsInteracting() {
 // 把远端的事整份拉下来（正常情况下每 15 秒一次）
 async function pullRemote(opts) {
   const background = !!(opts && opts.background);
+  const initial = !!(opts && opts.initial);
   if (background && userIsInteracting()) return;
   if (!REMOTE_ENABLED || sync.busy) return;
   if (sync.dirty) return;              // 本地还有没推上去的改动，先别覆盖
   sync.busy = true;
   try {
     const [mRes, lRes, metaRes] = await Promise.all([
-      sbFetch('/matters?select=id,data'),
-      sbFetch('/logs?select=id,data'),
-      sbFetch('/meta?select=key,value&key=eq.seq'),
+      sbFetch('/matters?select=id,data&id=like.' + encodeURIComponent(SOLO_PREFIX + '*')),
+      sbFetch('/logs?select=id,data&id=like.' + encodeURIComponent(SOLO_PREFIX + '*')),
+      sbFetch('/meta?select=key,value&key=eq.solo_seq'),
     ]);
     if (mRes.status === 404) throw new Error('tables-missing');
     if (!mRes.ok) throw new Error('HTTP ' + mRes.status);
@@ -927,8 +934,17 @@ async function pullRemote(opts) {
 
     const nextMatters = mRows.map(r => r.data);
     const nextLogs = lRows.map(r => r.data);
-    const seqRow = metaRows.filter(r => r.key === 'seq')[0];
+    const seqRow = metaRows.filter(r => r.key === 'solo_seq')[0];
     const nextSeq = seqRow && typeof seqRow.value === 'number' ? seqRow.value : seq;
+    // 第一次启用云同步时，云端还是空的就把这台设备已有的个人数据上传，避免覆盖丢失。
+    if (initial && !nextMatters.length && matters.length) {
+      syncReady = true;
+      sync.busy = false;
+      sync.status = 'loading';
+      sync.dirty = true;
+      pushRemote();
+      return;
+    }
     const changed = JSON.stringify(nextMatters) !== JSON.stringify(matters) ||
       JSON.stringify(nextLogs) !== JSON.stringify(logs) || nextSeq !== seq;
     // 请求发出后用户可能刚开始输入；这次结果留到下一轮再取。
@@ -967,21 +983,21 @@ async function pushRemote() {
   sync.busy = true;
   try {
     if (matters.length) {
-      const rows = matters.map(m => ({ id: String(m.id), data: m, updated_at: new Date().toISOString() }));
+      const rows = matters.map(m => ({ id: soloRemoteId(m.id), data: m, updated_at: new Date().toISOString() }));
       const r = await sbFetch('/matters', { method: 'POST', headers: UPSERT, body: JSON.stringify(rows) });
       if (r.status === 404) throw new Error('tables-missing');
       if (!r.ok) throw new Error('HTTP ' + r.status);
     }
     // 已读状态会修改旧日志，所以每次都 upsert 全部日志，确保其他设备同步。
     if (logs.length) {
-      const rows = logs.map(l => ({ id: l.id, matter_id: String(l.matterId), data: l }));
+      const rows = logs.map(l => ({ id: soloRemoteId(l.id), matter_id: soloRemoteId(l.matterId), data: l }));
       const r = await sbFetch('/logs', { method: 'POST', headers: UPSERT, body: JSON.stringify(rows) });
       if (r.ok) logs.forEach(l => sync.syncedLogs.add(l.id));
     }
-    await sbFetch('/meta', { method: 'POST', headers: UPSERT, body: JSON.stringify([{ key: 'seq', value: seq }]) });
+    await sbFetch('/meta', { method: 'POST', headers: UPSERT, body: JSON.stringify([{ key: 'solo_seq', value: seq }]) });
     for (const id of [...sync.purged]) {
-      await sbFetch('/matters?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
-      await sbFetch('/logs?matter_id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+      await sbFetch('/matters?id=eq.' + encodeURIComponent(soloRemoteId(id)), { method: 'DELETE' });
+      await sbFetch('/logs?matter_id=eq.' + encodeURIComponent(soloRemoteId(id)), { method: 'DELETE' });
       sync.purged.delete(id);
     }
     sync.status = 'ok';
@@ -1376,6 +1392,7 @@ function shell(route, content) {
       <div class="logo"><div class="brand-mark">C</div><span>Carol's work &amp; personal task manager</span></div>
       <nav class="nav">${navFor(route)}${langSwitcher('in-nav')}</nav>
       <div class="topbar-right">
+        ${syncBadge()}
         <button class="btn btn-sm btn-ghost" type="button" data-action="logout">${esc(t('topbar.signout'))}</button>
       </div>
     </div>
@@ -1735,7 +1752,7 @@ function viewSettings() {
       <div>
         <div class="card card-pad">
           <div class="section-title">${esc(L({zh:'数据保存',en:'Data storage',es:'Almacenamiento de datos'}))}</div>
-          <p>${esc(L({zh:'这是单人版。数据只保存在当前浏览器中，不会发送给其他成员，也不会同步到原来的团队网页。',en:'This is the single-user edition. Data stays in this browser and is not shared with the team site.',es:'Esta es la edición individual. Los datos permanecen en este navegador y no se comparten con el sitio del equipo.'}))}</p>
+          <p>${esc(L({zh:'这是单人版。手机和电脑会通过 Supabase 自动同步，个人事项与团队版数据相互隔离。',en:'This is the single-user edition. Phone and computer sync automatically through Supabase, while personal data stays separate from the team site.',es:'Esta es la edición individual. El móvil y el ordenador se sincronizan mediante Supabase, y los datos personales permanecen separados del sitio del equipo.'}))}</p>
           <div class="hint">${esc(L({zh:'建议定期使用“导出CSV表格”备份事项。',en:'Use Export CSV regularly to back up your matters.',es:'Usa Exportar CSV periódicamente para respaldar tus asuntos.'}))}</div>
         </div>
       </div>
