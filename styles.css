@@ -45,6 +45,7 @@ input,select,textarea{font:inherit;color:inherit}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(21,128,61,.14)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:10px;
   border:1px solid var(--line);background:#fff;color:var(--ink);font-size:14px;font-weight:500;transition:.15s;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn:hover{background:#f8fafc}
 .btn-primary{background:var(--brand-gradient);border-color:#526b31;color:#fff}
 .btn-primary:hover{background:linear-gradient(135deg,#126b34 0%,#496b30 42%,#941f16 100%)}
@@ -147,6 +148,9 @@ table.grid td{padding:11px 12px;border-bottom:1px solid var(--line-2);vertical-a
 table.grid tbody tr{cursor:pointer}
 table.grid tbody tr:hover{background:#fafcff}
 table.grid td.nw{white-space:nowrap}
+.bulk-cell{width:42px;min-width:42px;text-align:center!important;padding-left:10px!important;padding-right:6px!important}
+.bulk-check{width:17px;height:17px;margin:0;accent-color:var(--brand);vertical-align:middle;cursor:pointer}
+.bulk-check:disabled{cursor:not-allowed;opacity:.35}
 
 /* 收件箱与事项聊天 */
 .inbox-list{overflow:hidden}
