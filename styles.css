@@ -8,6 +8,7 @@
   --card:#ffffff;
   --brand:#15803d;
   --brand-soft:#ecfdf3;
+  --brand-gradient:linear-gradient(135deg,#15803d 0%,#4f7b35 42%,#b42318 100%);
   --red:#d92d20;
   --red-soft:#fef3f2;
   --yellow:#b54708;
@@ -30,10 +31,10 @@ input,select,textarea{font:inherit;color:inherit}
 
 /* ---------- 登录 ---------- */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
-  background:radial-gradient(1200px 600px at 15% -10%,#e4f7ea 0%,transparent 60%),var(--bg)}
+  background:radial-gradient(850px 520px at 5% 0%,#ddf5e5 0%,transparent 65%),radial-gradient(850px 520px at 100% 100%,#fde7e5 0%,transparent 65%),var(--bg)}
 .login-card{width:100%;max-width:430px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:32px;box-shadow:var(--shadow)}
 .login-brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-.brand-mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#22a052,#09652d);color:#fff;
+.brand-mark{width:40px;height:40px;border-radius:11px;background:var(--brand-gradient);color:#fff;
   display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;letter-spacing:.5px}
 .login-card h1{font-size:20px;margin:0;letter-spacing:-.2px}
 .login-card .sub{color:var(--ink-3);font-size:13px;margin:2px 0 22px}
@@ -45,8 +46,8 @@ input,select,textarea{font:inherit;color:inherit}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:10px;
   border:1px solid var(--line);background:#fff;color:var(--ink);font-size:14px;font-weight:500;transition:.15s;white-space:nowrap}
 .btn:hover{background:#f8fafc}
-.btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
-.btn-primary:hover{background:#166534}
+.btn-primary{background:var(--brand-gradient);border-color:#526b31;color:#fff}
+.btn-primary:hover{background:linear-gradient(135deg,#126b34 0%,#496b30 42%,#941f16 100%)}
 .btn-ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
 .btn-ghost:hover{background:#eef2f6}
 .btn-danger{color:var(--red);border-color:#f4c7c3}
@@ -76,7 +77,7 @@ input,select,textarea{font:inherit;color:inherit}
 .nav a{padding:7px 12px;border-radius:9px;color:var(--ink-2);font-size:14px;white-space:nowrap}
 .nav-label{position:relative;display:inline-block}
 .nav-count{position:absolute;right:-11px;top:-8px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
-  display:inline-flex;align-items:center;justify-content:center;background:var(--brand);color:#fff;font-size:10px;font-weight:700;line-height:1}
+  display:inline-flex;align-items:center;justify-content:center;background:var(--brand-gradient);color:#fff;font-size:10px;font-weight:700;line-height:1}
 .nav-count.unread-count{background:var(--red)}
 .nav a:hover{background:#f0f4f9;color:var(--ink)}
 .nav a.active{background:var(--brand-soft);color:var(--brand);font-weight:600}
@@ -85,7 +86,7 @@ input,select,textarea{font:inherit;color:inherit}
 .lang-switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
 .lang-switch button{border:none;background:transparent;padding:5px 11px;font-size:12.5px;color:var(--ink-3);font-weight:600;line-height:1.4}
 .lang-switch button:hover{background:#f0f4f9;color:var(--ink)}
-.lang-switch button.on{background:var(--brand);color:#fff}
+.lang-switch button.on{background:var(--brand-gradient);color:#fff}
 .lang-switch.in-nav{margin-left:10px;align-self:center;flex:none}
 .nav{display:flex;gap:2px;margin-left:6px;overflow-x:auto;scrollbar-width:none;align-items:center}
 .avatar{width:26px;height:26px;border-radius:50%;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
