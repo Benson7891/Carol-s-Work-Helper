@@ -43,14 +43,14 @@ const LANG_INDEX = { zh: 0, en: 1, es: 2 };
 /* 每条： [简体中文, English, Español] */
 const STR = {
   'app.title': ["Carol's Work Helper", "Carol's Work Helper", "Carol's Work Helper"],
-  'app.team': ['个人事务管理器', 'Personal task manager', 'Gestor personal de asuntos'],
+  'app.team': ['工作与个人事务管理器', 'Work & personal task manager', 'Gestor de asuntos laborales y personales'],
 
   'login.email': ['邮箱', 'Email', 'Correo electrónico'],
   'login.password': ['密码', 'Password', 'Contraseña'],
   'login.signin': ['登录', 'Sign in', 'Iniciar sesión'],
-  'login.noSms': ['这是 Carol 的个人事务管理器。',
-    "This is Carol's personal task manager.",
-    'Este es el gestor personal de asuntos de Carol.'],
+  'login.noSms': ['这是 Carol 的工作与个人事务管理器。',
+    "This is Carol's work & personal task manager.",
+    'Este es el gestor de asuntos laborales y personales de Carol.'],
   'login.demoTitle': ['演示账号', 'Demo accounts', 'Cuentas de demostración'],
   'login.hint': ['用不同账号登录，可以看到权限差异：Héctor 登录后看不到任何制裁／涉美事项。',
     'Sign in with different accounts to see permissions at work: Héctor cannot see any sanctions / US matters.',
@@ -1735,7 +1735,7 @@ function viewSettings() {
     <div class="page-head">
       <div>
         <h1>${esc(L({zh:'信息',en:'Info',es:'Información'}))}</h1>
-        <div class="desc">${esc(L({zh:'Carol 的个人事务管理器',en:"Carol's personal task manager",es:'Gestor personal de asuntos de Carol'}))}</div>
+        <div class="desc">${esc(L({zh:'Carol 的工作与个人事务管理器',en:"Carol's work & personal task manager",es:'Gestor de asuntos laborales y personales de Carol'}))}</div>
       </div>
     </div>
     <div class="detail-grid">
