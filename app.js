@@ -1710,7 +1710,7 @@ function viewWeekly() {
   const list = sorted(visibleMatters(currentUser()));
   const cols = `
     <div class="weekly-col">
-      <h3><span class="avatar" style="background:#e7eefc">C</span>Carol
+      <h3><span class="avatar" style="background:#dcfce7">C</span>Carol
         <span class="muted small">${esc(t('weekly.items', { n: list.length }))}</span></h3>
       ${list.map(m => `
         <div class="wcard" data-action="open-matter" data-id="${m.id}" style="cursor:pointer">
