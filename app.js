@@ -1373,16 +1373,9 @@ function shell(route, content) {
   return `
   <div class="topbar">
     <div class="topbar-inner">
-      <div class="logo"><div class="brand-mark">C</div><span>${esc(t(APP_TITLE_KEY))}</span></div>
+      <div class="logo"><div class="brand-mark">C</div><span>Work &amp; personal task manager</span></div>
       <nav class="nav">${navFor(route)}${langSwitcher('in-nav')}</nav>
       <div class="topbar-right">
-        <div class="user-chip">
-          <span class="avatar">${esc(u.short)}</span>
-          <span>
-            <span class="nm">${esc(u.name)}</span>
-            <span class="rl" style="display:block">${esc(t(TEAM_NAME_KEY))}</span>
-          </span>
-        </div>
         <button class="btn btn-sm btn-ghost" type="button" data-action="logout">${esc(t('topbar.signout'))}</button>
       </div>
     </div>
