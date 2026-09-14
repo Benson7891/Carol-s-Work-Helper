@@ -116,11 +116,23 @@ const STR = {
   'list.descAdmin': ['（管理员，全部事项）', '(admin, all matters)', '(administradora, todos los asuntos)'],
   'list.descMember': ['（只含你是项目成员的事项）', '(only matters you are assigned to)', '(solo asuntos en los que participas)'],
   'list.export': ['导出CSV表格', 'Export CSV spreadsheet', 'Exportar tabla CSV'],
+  'list.import': ['Excel/CSV 导入', 'Import Excel/CSV', 'Importar Excel/CSV'],
   'list.bulkDelete': ['批量删除', 'Bulk delete', 'Eliminar en lote'],
   'modal.export.title': ['导出CSV表格', 'Export CSV spreadsheet', 'Exportar tabla CSV'],
   'modal.export.body': ['CSV 表格可用 Excel 打开。', 'CSV spreadsheets can be opened in Excel.', 'Las tablas CSV se pueden abrir con Excel.'],
   'modal.export.confirm': ['下载CSV表格', 'Download CSV', 'Descargar CSV'],
-  'list.search': ['搜索客户、事项、下一步…', 'Search client, matter, next step…', 'Buscar cliente, asunto, próximo paso…'],
+  'list.search': ['搜索客户、事项、这一步', 'Search client, matter, current step', 'Buscar cliente, asunto, paso actual'],
+  'modal.import.title': ['Excel/CSV 导入', 'Import Excel/CSV', 'Importar Excel/CSV'],
+  'modal.import.hint': ['根据表格内容自动创建事项。支持 .xlsx、.xls 和 .csv。所有读取到的事项都会导入；填写错误的事项会标红。', 'Create matters from a spreadsheet. Supports .xlsx, .xls and .csv. Every row is imported; invalid matters are highlighted in red.', 'Cree asuntos desde una hoja de cálculo. Admite .xlsx, .xls y .csv. Se importan todas las filas; los asuntos incorrectos se marcan en rojo.'],
+  'modal.import.choose': ['选择文件', 'Choose file', 'Elegir archivo'],
+  'modal.import.confirm': ['开始导入', 'Start import', 'Iniciar importación'],
+  'modal.import.invalid': ['格式不对，是否查看示例文件？', 'Invalid format. Would you like to view the sample file?', 'El formato no es correcto. ¿Desea ver el archivo de ejemplo?'],
+  'modal.import.yes': ['是，下载示例文件', 'Yes, download sample', 'Sí, descargar ejemplo'],
+  'modal.import.no': ['否', 'No', 'No'],
+  'modal.import.result': ['已导入 {ok} 条事项', 'Imported {ok} matters', 'Se importaron {ok} asuntos'],
+  'modal.importError.title': ['导入完成，但部分内容填写错误', 'Import complete, but some entries are invalid', 'Importación completada, pero algunos datos son incorrectos'],
+  'modal.importFieldInvalid': ['事项“{title}”的“{field}”填写错误，请修改！', 'The “{field}” of matter “{title}” is invalid. Please correct it.', 'El campo “{field}” del asunto «{title}» es incorrecto. Corríjalo.'],
+  'list.importError': ['错误的事项，请点击修改', 'Invalid matter. Click to edit', 'Asunto incorrecto. Haga clic para modificarlo'],
   'list.allAreas': ['全部业务类型', 'All practice areas', 'Todas las áreas'],
   'list.allOwners': ['全部负责人', 'All owners', 'Todos los responsables'],
   'list.allStatus': ['全部状态', 'All statuses', 'Todos los estados'],
@@ -711,6 +723,29 @@ function dueText(s) {
   if (n === 0) return t('fmt.today');
   if (n === 1) return t('fmt.tomorrow');
   return t('fmt.inDays', { n });
+}
+function normalizeImportedDate(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return iso(value);
+  const raw = String(value == null ? '' : value).trim();
+  if (!raw) return '';
+  if (/^\d+(?:\.\d+)?$/.test(raw)) {
+    const serial = Number(raw);
+    if (serial > 20000 && serial < 80000) return iso(new Date(Date.UTC(1899, 11, 30) + serial * 86400000));
+  }
+  const m = raw.match(/^(\d{4})\s*[年\/-](\d{1,2})\s*[月\/-](\d{1,2})日?$/);
+  if (m) return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+  const d = new Date(raw.replace(/[年\/]/g, '-').replace(/月/g, '-').replace(/日/g, ''));
+  return Number.isNaN(d.getTime()) ? '' : iso(d);
+}
+function normalizeImportedStatus(value) {
+  const raw = String(value == null ? '' : value).toLowerCase()
+    .replace(/[🟢🟡🔴]/g, ' ').replace(/[·•]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!raw) return '';
+  const has = values => values.some(value => raw.includes(value));
+  if (has(['紧急', 'urgent', 'urgente', '需要立即处理', 'act now', 'requiere acción inmediata']) || ['red', 'rojo'].includes(raw)) return 'red';
+  if (has(['关注', 'watch', 'attention', 'atención', '等待客户', 'waiting on client', 'at risk', 'en riesgo']) || ['yellow', 'amarillo'].includes(raw)) return 'yellow';
+  if (has(['正常', 'normal', 'on track', 'en curso']) || ['green', 'verde'].includes(raw)) return 'green';
+  return '';
 }
 function isThisWeek(s) {
   const n = daysFromToday(s);
@@ -1322,8 +1357,8 @@ function toast(msg) {
   el.className = 'toast';
   el.textContent = msg;
   root.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 1700);
-  setTimeout(() => el.remove(), 2100);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 4700);
+  setTimeout(() => el.remove(), 5000);
 }
 function go(hash) { location.hash = hash; }
 
@@ -1497,9 +1532,9 @@ function matterRowsHTML() {
   const list = sorted(filterMatters());
   if (!list.length) return '';
   return list.map(m => `
-    <tr data-action="open-matter" data-id="${m.id}">
+    <tr class="${m.importError ? 'import-error' : ''}" data-action="open-matter" data-id="${m.id}">
       <td class="bulk-cell"><input class="bulk-check" type="checkbox" data-action="toggle-bulk-matter" data-id="${m.id}" ${state.bulkSelected.has(String(m.id)) ? 'checked' : ''} aria-label="${esc(t('list.bulkDelete'))}: ${esc(m.no)}"></td>
-      <td class="nw">${esc(m.no)}</td>
+      <td class="nw">${m.importError ? `<div class="import-error-label">${esc(t('list.importError'))}</div>` : ''}${esc(m.no)}</td>
       <td>${esc(L(m.client))}</td>
       <td><b>${esc(L(m.title))}</b>${m.notes ? `<div class="small muted">${esc(L(m.notes))}</div>` : ''}</td>
       <td>${areaTag(m.area)}</td>
@@ -1539,6 +1574,7 @@ function viewMatters() {
         <div class="desc">${esc(t('list.desc', { n }))}</div>
       </div>
       <div class="right">
+        <button class="btn" type="button" data-action="import-matters">${esc(t('list.import'))}</button>
         <button class="btn btn-danger" type="button" data-action="bulk-delete-matters" ${bulkCount ? '' : 'disabled'}>${esc(t('list.bulkDelete'))}${bulkCount ? ` (${bulkCount})` : ''}</button>
         <button class="btn" type="button" data-action="export-csv">${esc(t('list.export'))}</button>
         <button class="btn btn-primary" type="button" data-action="new-matter">${esc(t('dash.new'))}</button>
@@ -1853,6 +1889,32 @@ function modalNotice(mo) {
   );
 }
 
+function importErrorModal(errors) {
+  if (!errors.length) return null;
+  return {
+    type: 'notice', titleKey: 'modal.importError.title',
+    body: errors.map(error => `<div>${esc(t('modal.importFieldInvalid', {
+      title: error.title, field: t(error.fieldKey),
+    }))}</div>`).join(''),
+  };
+}
+
+function modalImport() {
+  return modalFrame(t('modal.import.title'),
+    `<div class="hint" style="margin-bottom:14px">${esc(t('modal.import.hint'))}</div>
+     <form id="import-form" data-action="import-file"><div class="field"><label class="req">${esc(t('modal.import.choose'))}</label>
+       <input type="file" name="importFile" accept=".csv,.xlsx,.xls" required></div></form>`,
+    `<button class="btn" type="button" data-action="close-modal">${esc(t('modal.cancel'))}</button>
+     <button class="btn btn-primary" type="submit" form="import-form">${esc(t('modal.import.confirm'))}</button>`);
+}
+
+function modalImportInvalid() {
+  return modalFrame(t('modal.import.title'),
+    `<div style="font-size:14.5px;color:var(--ink-2);line-height:1.75">${esc(t('modal.import.invalid'))}</div>`,
+    `<button class="btn" type="button" data-action="close-modal">${esc(t('modal.import.no'))}</button>
+     <button class="btn btn-primary" type="button" data-action="download-import-sample">${esc(t('modal.import.yes'))}</button>`);
+}
+
 function modalCompleteStep(mo) {
   const m = matterById(mo.matterId);
   if (!m) return '';
@@ -1933,6 +1995,8 @@ function renderModal() {
   if (mo.type === 'complete-step') return modalCompleteStep(mo);
   if (mo.type === 'confirm') return modalConfirm(mo);
   if (mo.type === 'notice') return modalNotice(mo);
+  if (mo.type === 'import') return modalImport();
+  if (mo.type === 'import-invalid') return modalImportInvalid();
   return '';
 }
 
@@ -2091,8 +2155,8 @@ function undoStep(id) {
 }
 
 function createMatter(data) {
-  if (!data.client || !data.title || !data.next || !data.due) { toast(t('toast.needClient')); return false; }
-  if ((data.status === 'red' || data.status === 'yellow') && !String(data.reason || '').trim()) { toast(t('toast.needReason')); return false; }
+  if (!data.allowImportErrors && (!data.client || !data.title || !data.next || !data.due)) { toast(t('toast.needClient')); return false; }
+  if (!data.allowImportErrors && (data.status === 'red' || data.status === 'yellow') && !String(data.reason || '').trim()) { toast(t('toast.needReason')); return false; }
   const stage = resolveCustom(data.stage, data.stageCustom);
   const waiting = resolveCustom(data.waiting, data.waitingCustom);
   const area = resolveCustom(data.area, data.areaCustom);
@@ -2107,6 +2171,7 @@ function createMatter(data) {
     stage: stage || STAGES[0], status: data.status, reason: data.reason || '',
     next: data.next, nextOwner: 'carol',
     due: data.due, waiting: waiting || 'none',
+    importError: !!data.importError,
     files: [], lastContact: iso(today()), notes: '',
   };
   if (!m.team.includes(m.owner)) m.team.push(m.owner);
@@ -2155,6 +2220,7 @@ function saveMatterFromDom(id) {
 
   if (!m.client || !m.title || !m.next || !m.due) { toast(t('toast.needClient')); return; }
   if ((m.status === 'red' || m.status === 'yellow') && !String(L(m.reason) || '').trim()) { toast(t('toast.needReason')); return; }
+  if (m.importError) { m.importError = false; changes.push('importError'); }
 
   if (before.status !== m.status) addLogKey(id, currentUser().id, 'detail.entry.status', { status: { __t: 'status.' + m.status, prefix: STATUS[m.status].dot + ' ' } });
   if (before.next !== m.next) addLogKey(id, currentUser().id, 'detail.entry.next', { next: L(m.next) });
@@ -2246,6 +2312,16 @@ document.addEventListener('click', ev => {
     }
     case 'new-matter':
       state.modal = { type: 'new-matter' }; render(); break;
+    case 'import-matters':
+      state.modal = { type: 'import' }; render(); break;
+    case 'download-import-sample': {
+      const heads = ['客户','事项名称','业务类型','当前阶段','状态','截止日期','等待谁','现在要做什么'];
+      const csv = '\ufeff' + heads.map(x => `"${x}"`).join(',') + '\n';
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = '个人事项导入示例.csv'; a.click(); URL.revokeObjectURL(a.href);
+      state.modal = null; render();
+      break;
+    }
     case 'close-modal':
       state.modal = null; render(); break;
     case 'open-matter':
@@ -2654,6 +2730,66 @@ document.addEventListener('submit', async ev => {
     session = { userId: user.id }; state.bulkSelected.clear(); state.trashSelected.clear(); save(KEY.session, session);
     go('#/'); render();
     toast(t('toast.welcome', { name: user.name.split(' ')[0] }));
+    return;
+  }
+  if (action === 'import-file') {
+    const file = form.importFile && form.importFile.files && form.importFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        let rows;
+        if (/\.xlsx?$/i.test(file.name)) {
+          if (!globalThis.XLSX) throw new Error('Excel parser unavailable');
+          const wb = XLSX.read(reader.result, { type: 'array' });
+          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        } else {
+          const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
+          const parse = line => line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/)
+            .map(x => x.replace(/^\"|\"$/g, '').replace(/\"\"/g, '\"').trim());
+          const heads = parse(lines.shift() || '');
+          rows = lines.map(line => Object.fromEntries(parse(line).map((v, i) => [heads[i], v])));
+        }
+        const aliases = {
+          client:['客户','client'], title:['事项名称','事项','matter name','title'], area:['业务类型','practice area','area'],
+          stage:['当前阶段','stage'], status:['状态','status'], due:['截止日期','截止','due date','due'],
+          waiting:['等待谁','waiting for','waiting'], next:['现在要做什么','当前步骤','下一步','next step','next'],
+        };
+        const val = (row, keys) => { const key = Object.keys(row).find(k => keys.some(a => k.trim().toLowerCase() === a.toLowerCase())); return key ? row[key] : ''; };
+        const headersPresent = Object.keys(rows[0] || {}).map(k => k.trim().toLowerCase());
+        const required = ['client','title','next','due'];
+        const validFormat = rows.length > 0 && required.every(name => aliases[name].some(alias => headersPresent.includes(alias.toLowerCase())));
+        if (!validFormat) { state.modal = { type: 'import-invalid' }; render(); return; }
+        let ok = 0;
+        const importErrors = [];
+        rows.forEach(row => {
+          const d = {};
+          Object.keys(aliases).forEach(k => d[k] = String(val(row, aliases[k]) ?? '').trim());
+          const displayTitle = d.title || d.client || '—';
+          const rawDue = String(val(row, aliases.due) ?? '').trim();
+          d.due = normalizeImportedDate(rawDue);
+          const importedStatus = normalizeImportedStatus(val(row, aliases.status));
+          if (!d.client) importErrors.push({ title: displayTitle, fieldKey: 'detail.client' });
+          if (!d.title) importErrors.push({ title: displayTitle, fieldKey: 'detail.title' });
+          if (!d.next) importErrors.push({ title: displayTitle, fieldKey: 'detail.next' });
+          if (!d.due) importErrors.push({ title: displayTitle, fieldKey: 'detail.due' });
+          if (!importedStatus) importErrors.push({ title: displayTitle, fieldKey: 'detail.status' });
+          d.importError = !d.client || !d.title || !d.next || !d.due || !importedStatus;
+          d.status = importedStatus || 'green';
+          d.area = d.area || 'other'; d.stage = d.stage || STAGES[0]; d.waiting = d.waiting || 'none';
+          d.client = d.client || '—'; d.title = d.title || '—'; d.next = d.next || '—'; d.due = d.due || rawDue || '—';
+          d.allowImportErrors = true;
+          if (createMatter(d)) ok++;
+        });
+        state.modal = importErrorModal(importErrors);
+        render();
+        toast(t('modal.import.result', { ok }));
+      } catch (e) {
+        state.modal = { type: 'notice', titleKey: 'modal.import.title', body: esc(String(e.message || e)) };
+        render();
+      }
+    };
+    if (/\.xlsx?$/i.test(file.name)) reader.readAsArrayBuffer(file); else reader.readAsText(file);
     return;
   }
   if (action === 'create-matter') {
